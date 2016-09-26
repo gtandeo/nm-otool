@@ -12,9 +12,11 @@
 
 #include <nm.h>
 
-int		argerror(void)
+int		argerror(const char *name)
 {
-	write(2, "argerr\n", 7);
+	ft_putstr("Usage: ");
+	ft_putstr(name);
+	ft_putendl(" FILE1 [FILE2 ...]");
 	return (-1);
 }
 

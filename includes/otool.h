@@ -29,10 +29,19 @@ typedef struct	s_otool
 	int			fd;
 	uint32_t	magic;
 	char		*file_name;
-	char		*ptr;
+	void		*ptr;
 }				t_otool;
 
-int				argerror(void);
+void			*init_struct(char *file);
+void			*delete_struct(t_otool *s);
+unsigned int	swap_int(unsigned int a);
+void			print_addr(uint64_t addr, int depth);
+void			otool(t_otool *s);
+int				otool_32(t_otool *otool, struct section *sect,
+				uint32_t nsects);
+int				otool_64(t_otool *otool, struct section_64 *sect,
+				uint32_t nsects);
+int				argerror(const char *name);
 void			*openerror(void);
 void			*staterror(void);
 void			*mmaperror(void);

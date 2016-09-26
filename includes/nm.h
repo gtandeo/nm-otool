@@ -66,7 +66,7 @@ void				section_numbers(t_nm *nm_s, struct load_command *lc,
 char				get_sect(t_nm *nm, struct nlist array);
 char				get_sect_64(t_nm *nm, struct nlist_64 array);
 unsigned int		swap_int(unsigned int a);
-int					argerror(void);
+int					argerror(const char *name);
 void				*openerror(void);
 void				*staterror(void);
 void				*mmaperror(void);

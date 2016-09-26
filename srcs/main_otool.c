@@ -12,60 +12,87 @@
 
 #include <otool.h>
 
-static void		*init_struct(char *file)
+static void	print_file(char *file)
 {
-	t_otool		*s;
-	struct stat	buf;
+	ft_putstr(file);
+	ft_putendl(":\n(__TEXT,__text) section");
+	return ;
+}
 
-	s = NULL;
-	if ((s = (t_otool *)malloc(sizeof(t_otool))) != NULL)
+static void	handle_arch(t_otool *otool, size_t size)
+{
+	int					ret;
+	uint32_t			ncmds;
+	struct load_command	*lc;
+
+	ret = 0;
+	ncmds = ((struct mach_header*)otool->ptr)->ncmds;
+	lc = (void*)(otool->ptr) + size;
+	while (ncmds-- > 0)
 	{
-		if ((s->fd = open(file, O_RDONLY)) < 0)
-			return (openerror());
-		if (fstat(s->fd, &buf) < 0)
-			return (staterror());
-		if ((s->ptr = mmap(NULL, buf.st_size, PROT_READ, MAP_PRIVATE, s->fd, 0)) 
-			== MAP_FAILED)
-			return (mmaperror());
-		s->buf = buf.st_size;
-		s->magic = *(uint32_t*)(s->ptr);
-		s->file_name = ft_strdup(file);
+		if (lc->cmd == LC_SEGMENT)
+			otool_32(otool, (void*)lc + sizeof(struct segment_command),
+				((struct segment_command*)lc)->nsects);
+		if (lc->cmd == LC_SEGMENT_64)
+			otool_64(otool, (void*)lc + sizeof(struct segment_command_64),
+				((struct segment_command_64*)lc)->nsects);
+		lc = (void*)lc + lc->cmdsize;
 	}
-	return (s);
 }
 
-static void		*delete_struct(t_otool *s)
+static void	handle_fat(t_otool *s, uint32_t nfat_arch)
 {
-	if (munmap(s->ptr, s->buf) < 0)
-		return (munmaperror());
-	close(s->fd);
-	free(s->file_name);
-	free(s);
-	return (NULL);
+	struct fat_arch			*arch;
+	struct mach_header		*mach;
+	struct fat_header		*header;
+
+	header = (struct fat_header *)(s->ptr);
+	nfat_arch = swap_int(header->nfat_arch);
+	arch = (void*)(header + 1);
+	while (nfat_arch--)
+	{
+		mach = (void*)((void*)header + swap_int(arch->offset));
+		if (mach->magic == MH_MAGIC_64 && mach->cputype == CPU_TYPE_X86_64)
+		{
+			s->ptr = (void*)header + swap_int(arch->offset);
+			if (__POINTER_WIDTH__ == 64)
+				break ;
+		}
+		if (mach->magic == MH_MAGIC && mach->cputype == CPU_TYPE_X86)
+		{
+			s->ptr = (void*)header + swap_int(arch->offset);
+			if (__POINTER_WIDTH__ == 32)
+				break ;
+		}
+		arch = arch + 1;
+	}
+	otool(s);
 }
 
-void			otool(t_otool *s)
+void		otool(t_otool *s)
 {
+	s->magic = *(uint32_t*)s->ptr;
 	if (s->magic == MH_MAGIC)
-		write(1, "32\n", 3);//handle_32(otool);
+		handle_arch(s, sizeof(struct mach_header));
 	else if (s->magic == MH_MAGIC_64)
-		write(1, "64\n", 3);//handle_64(otool);
+		handle_arch(s, sizeof(struct mach_header_64));
 	else if (s->magic == FAT_CIGAM)
-		write(1, "fat\n", 4);//handle_fat(otool);
+		handle_fat(s, 0);
 }
 
-int				main(int ac, char **av)
+int			main(int ac, char **av)
 {
 	int			i;
 	t_otool		*s;
 
 	i = 0;
 	if (ac < 2)
-		return (argerror());
+		return (argerror("ft_otool"));
 	while (++i < ac)
 	{
 		if ((s = (t_otool *)init_struct(av[i])) == NULL)
 			return (-1);
+		print_file(av[i]);
 		otool(s);
 		delete_struct(s);
 	}

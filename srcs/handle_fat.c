@@ -12,6 +12,26 @@
 
 #include <nm.h>
 
+static int		check_arch_type(t_nm *nm_s, struct mach_header *header,
+	struct fat_arch *arch)
+{
+	if (header->magic == MH_MAGIC_64 && swap_int(arch->cputype)
+		== CPU_TYPE_X86_64)
+	{
+		nm_s->ptr = (void *)header;
+		if (__POINTER_WIDTH__ == 64)
+			return (1);
+	}
+	else if (header->magic == MH_MAGIC && swap_int(arch->cputype)
+		== CPU_TYPE_X86)
+	{
+		nm_s->ptr = (void *)header;
+		if (__POINTER_WIDTH__ == 32)
+			return (2);
+	}
+	return (0);
+}
+
 void			handle_fat(t_nm *nm_s)
 {
 	uint32_t				i;
@@ -25,18 +45,8 @@ void			handle_fat(t_nm *nm_s)
 	while (i < swap_int(fat->nfat_arch))
 	{
 		header = (void *)(fat) + swap_int(arch->offset);
-		if (header->magic == MH_MAGIC_64 && swap_int(arch->cputype) == CPU_TYPE_X86_64)
-		{
-			nm_s->ptr = (void *)header;
-			if (__POINTER_WIDTH__ == 64)
-				break ;
-		}
-		else if (header->magic == MH_MAGIC && swap_int(arch->cputype) == CPU_TYPE_X86)
-		{
-			nm_s->ptr = (void *)header;
-			if (__POINTER_WIDTH__ == 32)
-				break ;
-		}
+		if (check_arch_type(nm_s, header, arch))
+			break ;
 		arch = arch + 1;
 		i++;
 	}

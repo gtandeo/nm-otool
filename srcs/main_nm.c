@@ -98,7 +98,7 @@ int			main(int ac, char **av)
 	struct stat	buf;
 
 	if (ac != 2)
-		return (argerror());
+		return (argerror("ft_nm"));
 	init_nm(&nm_s);
 	if ((fd = open(av[1], O_RDONLY)) < 0)
 		return ((int)openerror());

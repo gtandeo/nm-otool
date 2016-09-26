@@ -31,6 +31,10 @@ SRC_NM = main_nm.c \
 		error.c
 
 SRC_OTOOL = main_otool.c \
+			print_otool.c \
+			swap.c \
+			print.c \
+			otool_struct.c \
 			error.c
 
 SRCO = $(SRC:.c=.o)
